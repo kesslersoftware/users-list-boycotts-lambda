@@ -7,6 +7,7 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent
 
 import com.boycottpro.userboycotts.model.CompanySummary;
 import com.boycottpro.utilities.JwtUtility;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -31,21 +32,28 @@ public class GetBoycottsPerUserHandler implements RequestHandler<APIGatewayProxy
 
     @Override
     public APIGatewayProxyResponseEvent handleRequest(APIGatewayProxyRequestEvent event, Context context) {
+        String sub = null;
         try {
-            String sub = JwtUtility.getSubFromRestEvent(event);
-            if (sub == null) return response(401, "Unauthorized");
+            sub = JwtUtility.getSubFromRestEvent(event);
+            if (sub == null) return response(401, Map.of("message", "Unauthorized"));
             Set<CompanySummary> companies = getUserBoycottedCompanies(sub);
-            String responseBody = objectMapper.writeValueAsString(companies);
-            return response(200,responseBody);
+            return response(200,companies);
         } catch (Exception e) {
-            return response(500,"error : Unexpected server error: " + e.getMessage());
+            System.out.println(e.getMessage() + " for user " + sub);
+            return response(500,Map.of("error", "Unexpected server error: " + e.getMessage()) );
         }
     }
-    private APIGatewayProxyResponseEvent response(int status, String body) {
+    private APIGatewayProxyResponseEvent response(int status, Object body) {
+        String responseBody = null;
+        try {
+            responseBody = objectMapper.writeValueAsString(body);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
         return new APIGatewayProxyResponseEvent()
                 .withStatusCode(status)
                 .withHeaders(Map.of("Content-Type", "application/json"))
-                .withBody(body);
+                .withBody(responseBody);
     }
     public Set<CompanySummary> getUserBoycottedCompanies(String userId) {
         QueryRequest request = QueryRequest.builder()
