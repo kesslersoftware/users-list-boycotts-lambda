@@ -19,20 +19,6 @@ public class CompanySummary {
         return company_id;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof CompanySummary)) return false;
-        CompanySummary that = (CompanySummary) o;
-        return Objects.equals(company_id, that.company_id) &&
-                Objects.equals(company_name, that.company_name);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(company_id, company_name);
-    }
-
     public void setCompany_id(String company_id) {
         this.company_id = company_id;
     }
